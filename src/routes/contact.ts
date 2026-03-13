@@ -1,7 +1,6 @@
-import { Router, Request, Response } from 'express';
+import { VercelRequest, VercelResponse } from '@vercel/node';
 import { Resend } from 'resend';
 
-const router = Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface ContactBody {
@@ -10,12 +9,15 @@ interface ContactBody {
   message: string;
 }
 
-router.post('', async (req: Request<{}, {}, ContactBody>, res: Response) => {
-  const { name, email, message } = req.body;
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Método não permitido.' });
+  }
+
+  const { name, email, message } = req.body as ContactBody;
 
   if (!name || !email || !message) {
-    res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
-    return;
+    return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
   }
 
   try {
@@ -39,6 +41,4 @@ router.post('', async (req: Request<{}, {}, ContactBody>, res: Response) => {
     console.error('Erro ao enviar e-mail:', error);
     res.status(500).json({ error: 'Falha ao enviar o e-mail.' });
   }
-});
-
-export default router;
+}
