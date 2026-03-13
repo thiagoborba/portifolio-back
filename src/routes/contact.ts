@@ -15,7 +15,9 @@ router.post('', async (req: Request<{}, {}, ContactBody>, res: Response) => {
     return res.status(405).json({ error: 'Método não permitido.' });
   }
 
-  const { name, email, message } = req.body;
+  const name = req.body;
+  const email = req.body;
+  const message = req.body;
 
   if (!name || !email || !message) {
     res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
