@@ -14,11 +14,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@octokit/rest": "^22.0.1",
     "@vercel/node": "^5.6.15",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "resend": "^6.9.3"
+    "resend": "^6.9.3",
+    "shiki": "^4.0.2"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
