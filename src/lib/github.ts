@@ -68,6 +68,7 @@ function extractFunctions(code: string): string[] {
     let openBraces = 0;
     let openParens = 0;
     let bodyStarted = false;
+    let foundEnd = false;
 
     for (let j = lineIndex; j < lines.length; j++) {
       for (const char of lines[j]) {
@@ -97,11 +98,12 @@ function extractFunctions(code: string): string[] {
         }
 
         lineIndex = j + 1;
+        foundEnd = true;
         break;
       }
     }
 
-    if (!bodyStarted) lineIndex++;
+    if (!foundEnd) lineIndex++;
   }
 
   return functions;
@@ -135,7 +137,7 @@ async function fetchSnippetForRepo(
         return score(b) - score(a);
       });
 
-    for (const filePath of candidateFiles) {
+    for (const filePath of candidateFiles.slice(0, 5)) {
       const { data: fileData } = await octokit.repos.getContent({
         owner,
         repo,
