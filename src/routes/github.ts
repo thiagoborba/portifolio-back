@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { fetchSnippets, fetchProjects, Snippet, Project } from '../lib/github';
+import { fetchSnippets, fetchProjects, Snippet, Project } from '../lib/github.js';
 
 const router = Router();
 
