@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import contactRouter from './routes/contact.js';
-import githubRouter from './routes/github.js';
+import contactRouter from './routes/contact';
+import githubRouter from './routes/github';
 
 const app = express();
 
