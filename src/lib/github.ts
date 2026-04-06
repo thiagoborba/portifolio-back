@@ -10,7 +10,7 @@ export type Snippet = {
 export type Project = {
   id: string;
   name: string;
-  description: string | null;
+  description: string;
   githubUrl: string;
   technologies: string[];
   language: string | null;
@@ -27,6 +27,15 @@ const REPOS = [
   { owner: 'thiagoborba', repo: 'frontend-challenge' },
   { owner: 'thiagoborba', repo: 'chartOfAccounts' },
 ];
+
+const REPO_TECHNOLOGIES: Record<string, string[]> = {
+  'portifolio-front':   ['nextjs', 'typescript', 'react', 'scss'],
+  'portifolio-back':    ['nodejs', 'typescript'],
+  'briefing2task-front': ['nextjs', 'typescript', 'react'],
+  'design-system':      ['react', 'typescript', 'scss'],
+  'frontend-challenge': ['react', 'typescript'],
+  'chartOfAccounts':    ['typescript', 'nodejs'],
+};
 
 const INTERESTING_EXTENSIONS = ['.tsx', '.ts'];
 
@@ -184,8 +193,16 @@ export async function fetchSnippets(): Promise<Snippet[]> {
     .map((result) => result.value);
 }
 
+function formatRepoName(name: string): string {
+  return name
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export async function fetchProjects(): Promise<Project[]> {
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+
+  const repoNames = new Set(REPOS.map(({ repo }) => repo));
 
   const { data: repos } = await octokit.repos.listForUser({
     username: 'thiagoborba',
@@ -193,21 +210,26 @@ export async function fetchProjects(): Promise<Project[]> {
     per_page: 100,
   });
 
-  return repos.map((repo) => {
-    const technologies = [...(repo.topics ?? [])];
-    if (repo.language && !technologies.includes(repo.language.toLowerCase())) {
-      technologies.push(repo.language.toLowerCase());
-    }
-    return {
-      id: String(repo.id),
-      name: repo.name,
-      description: repo.description ?? null,
-      githubUrl: repo.html_url,
-      technologies,
-      language: repo.language ?? null,
-      stars: repo.stargazers_count ?? 0,
-      updatedAt: repo.updated_at ?? '',
-      homepage: repo.homepage ?? null,
-    };
-  });
+  return repos
+    .map((repo) => {
+      const fromTopics = [...(repo.topics ?? [])];
+      const fromLanguage =
+        repo.language && !fromTopics.includes(repo.language.toLowerCase())
+          ? [repo.language.toLowerCase()]
+          : [];
+      const fromConfig = REPO_TECHNOLOGIES[repo.name] ?? [];
+
+      const technologies = [...new Set([...fromTopics, ...fromLanguage, ...fromConfig])];
+      return {
+        id: String(repo.id),
+        name: repo.name,
+        description: repo.description ?? formatRepoName(repo.name),
+        githubUrl: repo.html_url,
+        technologies,
+        language: repo.language ?? null,
+        stars: repo.stargazers_count ?? 0,
+        updatedAt: repo.updated_at ?? '',
+        homepage: repo.homepage ?? null,
+      };
+    });
 }
