@@ -29,12 +29,12 @@ const REPOS = [
 ];
 
 const REPO_TECHNOLOGIES: Record<string, string[]> = {
-  'portifolio-front':   ['nextjs', 'typescript', 'react', 'scss'],
-  'portifolio-back':    ['nodejs', 'typescript'],
+  'portifolio-front': ['nextjs', 'typescript', 'react', 'scss'],
+  'portifolio-back': ['nodejs', 'typescript'],
   'briefing2task-front': ['nextjs', 'typescript', 'react'],
-  'design-system':      ['react', 'typescript', 'scss'],
+  'design-system': ['react', 'typescript', 'scss'],
   'frontend-challenge': ['react', 'typescript'],
-  'chartOfAccounts':    ['typescript', 'nodejs'],
+  chartOfAccounts: ['typescript', 'nodejs'],
 };
 
 const INTERESTING_EXTENSIONS = ['.tsx', '.ts'];
@@ -194,15 +194,11 @@ export async function fetchSnippets(): Promise<Snippet[]> {
 }
 
 function formatRepoName(name: string): string {
-  return name
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return name.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export async function fetchProjects(): Promise<Project[]> {
   const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-
-  const repoNames = new Set(REPOS.map(({ repo }) => repo));
 
   const { data: repos } = await octokit.repos.listForUser({
     username: 'thiagoborba',
@@ -210,26 +206,27 @@ export async function fetchProjects(): Promise<Project[]> {
     per_page: 100,
   });
 
-  return repos
-    .map((repo) => {
-      const fromTopics = [...(repo.topics ?? [])];
-      const fromLanguage =
-        repo.language && !fromTopics.includes(repo.language.toLowerCase())
-          ? [repo.language.toLowerCase()]
-          : [];
-      const fromConfig = REPO_TECHNOLOGIES[repo.name] ?? [];
+  return repos.map((repo) => {
+    const fromTopics = [...(repo.topics ?? [])];
+    const fromLanguage =
+      repo.language && !fromTopics.includes(repo.language.toLowerCase())
+        ? [repo.language.toLowerCase()]
+        : [];
+    const fromConfig = REPO_TECHNOLOGIES[repo.name] ?? [];
 
-      const technologies = [...new Set([...fromTopics, ...fromLanguage, ...fromConfig])];
-      return {
-        id: String(repo.id),
-        name: repo.name,
-        description: repo.description ?? formatRepoName(repo.name),
-        githubUrl: repo.html_url,
-        technologies,
-        language: repo.language ?? null,
-        stars: repo.stargazers_count ?? 0,
-        updatedAt: repo.updated_at ?? '',
-        homepage: repo.homepage ?? null,
-      };
-    });
+    const technologies = [
+      ...new Set([...fromTopics, ...fromLanguage, ...fromConfig]),
+    ];
+    return {
+      id: String(repo.id),
+      name: repo.name,
+      description: repo.description ?? formatRepoName(repo.name),
+      githubUrl: repo.html_url,
+      technologies,
+      language: repo.language ?? null,
+      stars: repo.stargazers_count ?? 0,
+      updatedAt: repo.updated_at ?? '',
+      homepage: repo.homepage ?? null,
+    };
+  });
 }
