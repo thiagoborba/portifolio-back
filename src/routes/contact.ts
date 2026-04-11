@@ -4,6 +4,15 @@ import { Resend } from 'resend';
 const router = Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 interface ContactBody {
   name: string;
   email: string;
@@ -28,13 +37,13 @@ router.post('', async (req: Request<{}, {}, ContactBody>, res: Response) => {
     await resend.emails.send({
       from: 'Formulário de Contato <onboarding@resend.dev>',
       to: process.env.EMAIL_TO!,
-      subject: `Novo contato de ${name}`,
+      subject: `Novo contato de ${escapeHtml(name)}`,
       html: `
         <h2>Novo contato recebido</h2>
-        <p><strong>Nome:</strong> ${name}</p>
-        <p><strong>E-mail:</strong> ${email}</p>
+        <p><strong>Nome:</strong> ${escapeHtml(name)}</p>
+        <p><strong>E-mail:</strong> ${escapeHtml(email)}</p>
         <p><strong>Mensagem:</strong></p>
-        <p>${message}</p>
+        <p>${escapeHtml(message)}</p>
       `,
     });
 
