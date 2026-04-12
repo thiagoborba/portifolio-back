@@ -1,58 +1,28 @@
 import { Octokit } from '@octokit/rest';
 import { codeToHtml } from 'shiki';
 
-/**
- * Sanitizes HTML produced by Shiki's codeToHtml().
- *
- * Shiki's output is a narrow, predictable structure:
- *   <pre class="shiki ..."><code><span class="line"><span style="color:#...">TOKEN</span></span></code></pre>
- *
- * The only tags ever emitted are <pre>, <code>, and <span>.
- * The only attributes ever used are `class` and `style`.
- *
- * This function enforces that contract as a defence-in-depth layer against:
- *   - A future Shiki regression that emits unexpected markup.
- *   - A supply-chain compromise of the shiki package.
- *   - Unexpected characters in GitHub file content escaping the tokeniser.
- *
- * Strategy: strip every HTML tag that is not in the known-good allow-list,
- * and strip every attribute that is not `class` or `style`.
- */
-function sanitizeShikiHtml(html: string): string {
-  const ALLOWED_TAGS = new Set(['pre', 'code', 'span']);
+const SHIKI_ALLOWED_TAGS = new Set(['pre', 'code', 'span']);
+const SHIKI_ALLOWED_ATTRS = /\b(class|style)=("[^"]*"|'[^']*')/g;
 
-  // Remove any tag whose name is not in the allow-list (including closing tags).
-  // This catches <script>, <img>, <a>, etc.
-  const withoutForbiddenTags = html.replace(
+function stripForbiddenTags(html: string): string {
+  return html.replace(
     /<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g,
-    (fullMatch, tagName: string) => {
-      if (ALLOWED_TAGS.has(tagName.toLowerCase())) {
-        return fullMatch; // keep allowed tags — attributes are filtered next
-      }
-      return ''; // strip disallowed tags entirely
-    },
+    (match, tag: string) => (SHIKI_ALLOWED_TAGS.has(tag.toLowerCase()) ? match : ''),
   );
+}
 
-  // Within remaining allowed tags, strip every attribute except `class` and `style`.
-  // This eliminates event handlers (on*), href, src, data-*, etc.
-  const withSafeAttributes = withoutForbiddenTags.replace(
+function stripUnsafeAttributes(html: string): string {
+  return html.replace(
     /<([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g,
-    (_fullMatch, tagName: string, rawAttrs: string) => {
-      // Extract only class="..." and style="..." attributes.
-      const safeAttrs: string[] = [];
-
-      const attrPattern = /\b(class|style)=("[^"]*"|'[^']*')/g;
-      let m: RegExpExecArray | null;
-      while ((m = attrPattern.exec(rawAttrs)) !== null) {
-        safeAttrs.push(`${m[1]}=${m[2]}`);
-      }
-
-      const attrStr = safeAttrs.length > 0 ? ` ${safeAttrs.join(' ')}` : '';
-      return `<${tagName}${attrStr}>`;
+    (_match, tag: string, attrs: string) => {
+      const safe = [...attrs.matchAll(SHIKI_ALLOWED_ATTRS)].map(m => `${m[1]}=${m[2]}`);
+      return `<${tag}${safe.length ? ` ${safe.join(' ')}` : ''}>`;
     },
   );
+}
 
-  return withSafeAttributes;
+function sanitizeShikiHtml(html: string): string {
+  return stripUnsafeAttributes(stripForbiddenTags(html));
 }
 
 export type Snippet = {
